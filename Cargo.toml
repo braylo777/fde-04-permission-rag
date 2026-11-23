@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Retrieval that checks permissions before it ranks: tenant isolation, document ACLs, hybrid search, citations, multi-hop graph and abstention."
-repository = "https://github.com/braylo-ai/fde-04-permission-rag"
+repository = "https://github.com/braylo777/fde-04-permission-rag"
 
 [lib]
 crate-type = ["rlib", "cdylib"]

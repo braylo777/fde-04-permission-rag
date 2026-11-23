@@ -42,7 +42,7 @@ Every operation takes JSON in and gives JSON out. The CLI, the tests and the dem
 You need Rust (stable). No Node, no npm.
 
 ```bash
-git clone https://github.com/braylo-ai/fde-04-permission-rag
+git clone https://github.com/braylo777/fde-04-permission-rag
 cd fde-04-permission-rag
 cargo test
 cargo run -- ops
@@ -82,7 +82,7 @@ web/              demo page; examples.json drives both the page and this README
 
 ## Part of a series
 
-This is one of 12 repos that work through a public Forward Deployed Engineering roadmap ([source post](https://x.com/suraj_sharma14/status/2124827808535048566)). All 12: [github.com/braylo-ai?q=fde-](https://github.com/braylo-ai?tab=repositories&q=fde-).
+This is one of 12 repos that work through a public Forward Deployed Engineering roadmap ([source post](https://x.com/suraj_sharma14/status/2124827808535048566)). All 12: [github.com/braylo777?q=fde-](https://github.com/braylo777?tab=repositories&q=fde-).
 
 ## License
 
