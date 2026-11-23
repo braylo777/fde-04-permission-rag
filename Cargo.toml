@@ -1,0 +1,26 @@
+[package]
+name = "fde-04-permission-rag"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Retrieval that checks permissions before it ranks: tenant isolation, document ACLs, hybrid search, citations, multi-hop graph and abstention."
+repository = "https://github.com/braylo-ai/fde-04-permission-rag"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "fde-04-permission-rag"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+sha2 = "=0.10.9"
+hmac = "=0.12.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+codegen-units = 1

@@ -1,0 +1,499 @@
+{
+  "stage": 4,
+  "repo": "fde-04-permission-rag",
+  "title": "Permission-Filtered RAG & GraphRAG",
+  "tagline": "Retrieval that checks permissions before it ranks: exact tenant isolation, document ACLs, hybrid search, a citation on every sentence, multi-hop graph paths, and an honest 'I don't know'.",
+  "why": "The fastest way to lose an enterprise customer is a chatbot that quotes the CEO's salary to an intern, or another customer's data to a tenant. Filtering after retrieval is not enough: a hidden document can still shape scores, snippets and counts. This repo applies tenant and ACL checks before anything is ranked, grounds every answer sentence in a cited chunk, and abstains when the evidence is weak.",
+  "covers": [
+    "Pre-retrieval filter: exact tenant match, user / group ACL, explicit deny, tenant-wide flag that never crosses tenants, tag filters",
+    "Hybrid search: sentence-aware chunking, BM25, hashed character-trigram vectors, Reciprocal Rank Fusion",
+    "Extractive answers with a [doc#chunk] citation per sentence and a verbatim grounding check",
+    "Abstention when term coverage or lexical evidence is below a threshold",
+    "GraphRAG: shortest multi-hop path over triples; each edge inherits its source document's ACL",
+    "Leak test: proves no out-of-scope document is returned and lists what the filter blocked"
+  ],
+  "gaps": [
+    "Hashed n-gram vectors stand in for a real embedding model; swap search::vector for your embeddings",
+    "No LLM generation step: answers are extractive, which is what makes the grounding check exact",
+    "No persistent index or vector DB; documents are passed in per request",
+    "Triple extraction from text (entity / relation NER) is not included; triples are inputs"
+  ],
+  "ops": [
+    {
+      "op": "search",
+      "label": "Hybrid search",
+      "help": "Bo (support, tenant acme) searches for hotel limits. The exec and Globex policies match the words but are filtered out before ranking: visible_docs shows only what Bo may see.",
+      "input": {
+        "docs": [
+          {
+            "id": "acme-travel",
+            "tenant": "acme",
+            "title": "Acme travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Economy class is required for flights under 6 hours. Business class needs VP approval. The hotel limit is 180 USD per night in most cities and 260 USD per night in New York and London."
+          },
+          {
+            "id": "acme-exec-comp",
+            "tenant": "acme",
+            "title": "Executive compensation 2026",
+            "acl": {
+              "groups": [
+                "exec",
+                "hr-comp"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The CEO hotel limit is 900 USD per night. Executive bonus pool is 4.2 million USD for 2026."
+          },
+          {
+            "id": "acme-reorg",
+            "tenant": "acme",
+            "title": "Q1 reorg plan (draft)",
+            "acl": {
+              "users": [
+                "cfo@acme"
+              ],
+              "deny_users": [
+                "bo@acme"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The support team in Austin will merge into the Denver office in March. Severance budget is 1.1 million USD."
+          },
+          {
+            "id": "acme-support",
+            "tenant": "acme",
+            "title": "Support runbook",
+            "acl": {
+              "groups": [
+                "support"
+              ]
+            },
+            "tags": [
+              "ops"
+            ],
+            "text": "Refunds over 500 USD need a team lead. Refunds are processed within 5 business days."
+          },
+          {
+            "id": "globex-travel",
+            "tenant": "globex",
+            "title": "Globex travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Globex staff may book business class on any flight. The hotel limit is 450 USD per night."
+          }
+        ],
+        "principal": {
+          "user": "bo@acme",
+          "tenant": "acme",
+          "groups": [
+            "support"
+          ]
+        },
+        "query": "hotel limit per night",
+        "k": 3
+      }
+    },
+    {
+      "op": "answer",
+      "label": "Cited answer",
+      "help": "Each sentence ends with its source. Change the principal's groups to [\"exec\"] and ask about the CEO hotel limit to see the answer change with access.",
+      "input": {
+        "docs": [
+          {
+            "id": "acme-travel",
+            "tenant": "acme",
+            "title": "Acme travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Economy class is required for flights under 6 hours. Business class needs VP approval. The hotel limit is 180 USD per night in most cities and 260 USD per night in New York and London."
+          },
+          {
+            "id": "acme-exec-comp",
+            "tenant": "acme",
+            "title": "Executive compensation 2026",
+            "acl": {
+              "groups": [
+                "exec",
+                "hr-comp"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The CEO hotel limit is 900 USD per night. Executive bonus pool is 4.2 million USD for 2026."
+          },
+          {
+            "id": "acme-reorg",
+            "tenant": "acme",
+            "title": "Q1 reorg plan (draft)",
+            "acl": {
+              "users": [
+                "cfo@acme"
+              ],
+              "deny_users": [
+                "bo@acme"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The support team in Austin will merge into the Denver office in March. Severance budget is 1.1 million USD."
+          },
+          {
+            "id": "acme-support",
+            "tenant": "acme",
+            "title": "Support runbook",
+            "acl": {
+              "groups": [
+                "support"
+              ]
+            },
+            "tags": [
+              "ops"
+            ],
+            "text": "Refunds over 500 USD need a team lead. Refunds are processed within 5 business days."
+          },
+          {
+            "id": "globex-travel",
+            "tenant": "globex",
+            "title": "Globex travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Globex staff may book business class on any flight. The hotel limit is 450 USD per night."
+          }
+        ],
+        "principal": {
+          "user": "bo@acme",
+          "tenant": "acme",
+          "groups": [
+            "support"
+          ]
+        },
+        "query": "What is the hotel limit per night in New York?",
+        "max_sentences": 1
+      }
+    },
+    {
+      "op": "answer",
+      "label": "Abstain",
+      "help": "Bo asks about the reorg. The only document that answers it denies Bo, so the system abstains instead of guessing or leaking.",
+      "input": {
+        "docs": [
+          {
+            "id": "acme-travel",
+            "tenant": "acme",
+            "title": "Acme travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Economy class is required for flights under 6 hours. Business class needs VP approval. The hotel limit is 180 USD per night in most cities and 260 USD per night in New York and London."
+          },
+          {
+            "id": "acme-exec-comp",
+            "tenant": "acme",
+            "title": "Executive compensation 2026",
+            "acl": {
+              "groups": [
+                "exec",
+                "hr-comp"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The CEO hotel limit is 900 USD per night. Executive bonus pool is 4.2 million USD for 2026."
+          },
+          {
+            "id": "acme-reorg",
+            "tenant": "acme",
+            "title": "Q1 reorg plan (draft)",
+            "acl": {
+              "users": [
+                "cfo@acme"
+              ],
+              "deny_users": [
+                "bo@acme"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The support team in Austin will merge into the Denver office in March. Severance budget is 1.1 million USD."
+          },
+          {
+            "id": "acme-support",
+            "tenant": "acme",
+            "title": "Support runbook",
+            "acl": {
+              "groups": [
+                "support"
+              ]
+            },
+            "tags": [
+              "ops"
+            ],
+            "text": "Refunds over 500 USD need a team lead. Refunds are processed within 5 business days."
+          },
+          {
+            "id": "globex-travel",
+            "tenant": "globex",
+            "title": "Globex travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Globex staff may book business class on any flight. The hotel limit is 450 USD per night."
+          }
+        ],
+        "principal": {
+          "user": "bo@acme",
+          "tenant": "acme",
+          "groups": [
+            "support"
+          ]
+        },
+        "query": "When does the Austin support team merge into Denver?"
+      }
+    },
+    {
+      "op": "graph_query",
+      "label": "Multi-hop graph",
+      "help": "How is Acme connected to Dana Park? The path uses two permitted documents. Try goal Globex: that edge comes from another tenant, so no path is returned.",
+      "input": {
+        "docs": [
+          {
+            "id": "acme-travel",
+            "tenant": "acme",
+            "title": "Acme travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Economy class is required for flights under 6 hours. Business class needs VP approval. The hotel limit is 180 USD per night in most cities and 260 USD per night in New York and London."
+          },
+          {
+            "id": "acme-exec-comp",
+            "tenant": "acme",
+            "title": "Executive compensation 2026",
+            "acl": {
+              "groups": [
+                "exec",
+                "hr-comp"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The CEO hotel limit is 900 USD per night. Executive bonus pool is 4.2 million USD for 2026."
+          },
+          {
+            "id": "acme-reorg",
+            "tenant": "acme",
+            "title": "Q1 reorg plan (draft)",
+            "acl": {
+              "users": [
+                "cfo@acme"
+              ],
+              "deny_users": [
+                "bo@acme"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The support team in Austin will merge into the Denver office in March. Severance budget is 1.1 million USD."
+          },
+          {
+            "id": "acme-support",
+            "tenant": "acme",
+            "title": "Support runbook",
+            "acl": {
+              "groups": [
+                "support"
+              ]
+            },
+            "tags": [
+              "ops"
+            ],
+            "text": "Refunds over 500 USD need a team lead. Refunds are processed within 5 business days."
+          },
+          {
+            "id": "globex-travel",
+            "tenant": "globex",
+            "title": "Globex travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Globex staff may book business class on any flight. The hotel limit is 450 USD per night."
+          }
+        ],
+        "principal": {
+          "user": "bo@acme",
+          "tenant": "acme",
+          "groups": [
+            "support"
+          ]
+        },
+        "triples": [
+          {
+            "s": "Acme",
+            "r": "acquired",
+            "o": "Bolt Robotics",
+            "doc": "acme-travel"
+          },
+          {
+            "s": "Bolt Robotics",
+            "r": "supplies",
+            "o": "Contoso Grid",
+            "doc": "acme-support"
+          },
+          {
+            "s": "Contoso Grid",
+            "r": "sued",
+            "o": "Acme",
+            "doc": "acme-reorg"
+          },
+          {
+            "s": "Bolt Robotics",
+            "r": "founded by",
+            "o": "Dana Park",
+            "doc": "acme-support"
+          },
+          {
+            "s": "Dana Park",
+            "r": "advises",
+            "o": "Globex",
+            "doc": "globex-travel"
+          }
+        ],
+        "start": "Acme",
+        "goal": "Dana Park",
+        "max_hops": 3
+      }
+    },
+    {
+      "op": "leak_test",
+      "label": "Leak test",
+      "help": "Runs queries as Bo. leaked must be empty; blocked_by_filter shows the documents that would have ranked without the permission filter.",
+      "input": {
+        "docs": [
+          {
+            "id": "acme-travel",
+            "tenant": "acme",
+            "title": "Acme travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Economy class is required for flights under 6 hours. Business class needs VP approval. The hotel limit is 180 USD per night in most cities and 260 USD per night in New York and London."
+          },
+          {
+            "id": "acme-exec-comp",
+            "tenant": "acme",
+            "title": "Executive compensation 2026",
+            "acl": {
+              "groups": [
+                "exec",
+                "hr-comp"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The CEO hotel limit is 900 USD per night. Executive bonus pool is 4.2 million USD for 2026."
+          },
+          {
+            "id": "acme-reorg",
+            "tenant": "acme",
+            "title": "Q1 reorg plan (draft)",
+            "acl": {
+              "users": [
+                "cfo@acme"
+              ],
+              "deny_users": [
+                "bo@acme"
+              ]
+            },
+            "tags": [
+              "hr"
+            ],
+            "text": "The support team in Austin will merge into the Denver office in March. Severance budget is 1.1 million USD."
+          },
+          {
+            "id": "acme-support",
+            "tenant": "acme",
+            "title": "Support runbook",
+            "acl": {
+              "groups": [
+                "support"
+              ]
+            },
+            "tags": [
+              "ops"
+            ],
+            "text": "Refunds over 500 USD need a team lead. Refunds are processed within 5 business days."
+          },
+          {
+            "id": "globex-travel",
+            "tenant": "globex",
+            "title": "Globex travel policy",
+            "acl": {
+              "tenant_wide": true
+            },
+            "tags": [
+              "policy"
+            ],
+            "text": "Globex staff may book business class on any flight. The hotel limit is 450 USD per night."
+          }
+        ],
+        "principal": {
+          "user": "bo@acme",
+          "tenant": "acme",
+          "groups": [
+            "support"
+          ]
+        },
+        "queries": [
+          "hotel limit per night",
+          "severance budget",
+          "executive bonus pool",
+          "refund approval"
+        ]
+      }
+    }
+  ]
+}
