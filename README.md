@@ -4,6 +4,8 @@
 
 Retrieval that checks permissions before it ranks: exact tenant isolation, document ACLs, hybrid search, a citation on every sentence, multi-hop graph paths, and an honest 'I don't know'.
 
+**Also built as Project 4 of 12, "Row-Level Secure RAG Engine",** from the companion [12 FDE projects post](https://x.com/suraj_sharma14/status/2125197762752806998).
+
 **Live demo:** https://fde-04-permission-rag.braylo777.workers.dev — the Rust core runs in your browser as WebAssembly. No server, no tracking.
 
 ## Why this matters
@@ -82,7 +84,7 @@ web/              demo page; examples.json drives both the page and this README
 
 ## Part of a series
 
-This is one of 12 repos that work through a public Forward Deployed Engineering roadmap ([source post](https://x.com/suraj_sharma14/status/2124827808535048566)). All 12: [github.com/braylo777?q=fde-](https://github.com/braylo777?tab=repositories&q=fde-).
+This is one of 12 repos that work through a public Forward Deployed Engineering roadmap ([12 stages](https://x.com/suraj_sharma14/status/2124827808535048566), [12 projects](https://x.com/suraj_sharma14/status/2125197762752806998)). All 12: [github.com/braylo777?q=fde-](https://github.com/braylo777?tab=repositories&q=fde-).
 
 ## License
 

@@ -495,5 +495,9 @@
         ]
       }
     }
-  ]
+  ],
+  "project": {
+    "n": 4,
+    "title": "Row-Level Secure RAG Engine"
+  }
 }
